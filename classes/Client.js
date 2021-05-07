@@ -1,11 +1,12 @@
 const WebSocket = require('ws')
 const Events = require('./Events.js')
+const SlashCommandInteraction = require('./SlashCommand.js')
 
 var connectionData = {
     op: 2,
     d: {
         token: null,
-        intents: 513,
+        intents: 32767,
         properties: {
             '$os': 'linux',
             '$browser': 'disco',
@@ -76,6 +77,10 @@ class Client{
         var token = token || this.token; 
         con = new WebSocket('wss://gateway.discord.gg')
 
+        con.on('close', () => {
+            con = new WebSocket('wss://gateway.discord.gg')
+        })
+
         con.on('message', (raw) => {
             var raw_json = JSON.parse(raw);
             var data = raw_json.d;
@@ -111,12 +116,12 @@ class Client{
                 }
                 else if(event == 'INTERACTION_CREATE'){
                     //console.log(data.token)
-                    let interactions_id = data.id;
-                    let interactions_token = data.token;
-                    let command_data = data.data;
-                    if(Events.SLASH_COMMAND in this._events) this._events[Events.SLASH_COMMAND](interactions_id, interactions_token, command_data, data)
+                    let Command = new SlashCommandInteraction(data);
+                    let callback = this._events[Events.SLASH_COMMAND]
+                    if(typeof callback == 'function') callback(Command)
                 }
             }
+            else if(type == 7) console.log('Trying to disconnect.')
         })
     }
 
@@ -135,8 +140,14 @@ class Client{
 
     /**
      * 
+     * @callback slashCommandCallback
+     * @param {SlashCommandInteraction} command - 
+     */
+
+    /**
+     * 
      * @param {String} event - The event that is going to be called.
-     * @param {Function} callback 
+     * @param {slashCommandCallback} callback 
      */
     on(event, callback){
         this._events[event] = callback;
