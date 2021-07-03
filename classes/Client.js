@@ -1,6 +1,9 @@
-const WebSocket = require('ws')
+const WebSocket = require('./WebSocketClient.js')
 const Events = require('./Events.js')
 const SlashCommandInteraction = require('./SlashCommand.js')
+const MessageComponent = require('./MessageComponent.js')
+const HeartBeatLoop = require('./HeartBeatLoop.js');
+
 
 var connectionData = {
     op: 2,
@@ -32,8 +35,7 @@ var connectionData = {
 
 var sequenceNumber;
 var con;
-var latency;
-var heartbeatloop = true;
+//var latency;
 
 class Client{
     static APIUrl = 'https://discord.com/api/v9/';
@@ -41,6 +43,8 @@ class Client{
     sessionID;
     heartbeatInterval;
     _events = {};
+    heartBeat;
+    reconnect = false;
 
     storage = {
         _users: {},
@@ -75,31 +79,84 @@ class Client{
      */
     start(token){
         var token = token || this.token; 
-        con = new WebSocket('wss://gateway.discord.gg')
+        con = new WebSocket();
+        con.open('wss://gateway.discord.gg');
 
-        con.on('close', () => {
-            con = new WebSocket('wss://gateway.discord.gg')
-        })
+        this.webSocketSetup(token);
+    }
+    
 
-        con.on('message', (raw) => {
+    /**
+     * 
+     * @callback slashCommandCallback
+     * @param {SlashCommandInteraction} command - 
+     */
+
+    /**
+     * 
+     * @param {String} event - The event that is going to be called.
+     * @param {slashCommandCallback} callback 
+     */
+    on(event, callback){
+        this._events[event] = callback;
+    }
+
+    webSocketSetup(token){
+        /*con.on('close', () => {
+            heartbeatloop = false;
+            try{
+                console.log('Reconnecting...')
+                var i = 0;
+                setTimeout(() => {
+                    try{
+                        con = new WebSocket('wss://gateway.discord.com')
+                    }catch{
+                        con = null;
+                    }
+                    con.on('open', () => {
+                        con.send(JSON.stringify({ op: 6, d: {token: this.token, session_id: this.sessionID, seq: sequenceNumber} }))
+                    })
+                    this.webSocketSetup(this.token)
+                    }, 20000)
+            }catch(err){
+                console.log(err)
+                console.log('Unable to reconnect.')
+            }
+            
+            
+        })*/
+        con.onclose = (e) => {
+            this.heartBeat.Close();
+            this.heartBeat = null;
+            this.reconnect = true;
+        }
+
+        con.onopen = (e) => {
+            console.log('Connection to discord API.')
+        }
+    
+        con.onmessage = (raw, flags, number) => {
             var raw_json = JSON.parse(raw);
             var data = raw_json.d;
             var type = raw_json.op;
             var event = raw_json.t;
-            if(raw_json.s) sequenceNumber = raw_json.s;
-            let ping = new Date().getTime();
-            //console.log(type)
-
-            if(type == 7){
-                con.send(JSON.stringify({ token: this.token, session_id: this.sessionID, seq: sequenceNumber }))
+            if(raw_json.s) {
+                this.heartBeat._newData(raw_json.s)
             }
-            else if(type == 11) console.log(`Heartbeat active. Latency: ${(ping-latency).toString()} ms`);
+            //let ping = new Date().getTime();
+            //console.log(type)
+            console.log(this.heartBeat)
+            if(type == 7){
+                con.send(JSON.stringify({ op: 6, d: {token: this.token, session_id: this.sessionID, seq: sequenceNumber} }))
+            }
+            
+            else if(type == 11) this.heartBeat._callback(Date.now());
             else if(type == 10) {
                 this.heartbeatInterval = data.heartbeat_interval;
                 console.log('Started to ping every', (this.heartbeatInterval/1000).toString(), 'seconds.')
                 connectionData.d.token = token;
                 con.send(JSON.stringify(connectionData));
-                this.#heartbeatLoop()
+                this.heartBeat = HeartBeatLoop(con, this.heartbeatInterval)
             }
             else if(type == 0){
                 console.log('Event:', event);
@@ -117,40 +174,25 @@ class Client{
                 else if(event == 'INTERACTION_CREATE'){
                     //console.log(data.token)
                     let Command = new SlashCommandInteraction(data);
-                    let callback = this._events[Events.SLASH_COMMAND]
-                    if(typeof callback == 'function') callback(Command)
+                    if(Command.type == 2){
+                        let callback = this._events[Events.SLASH_COMMAND]
+                        if(typeof callback == 'function') callback(Command, data)
+                    }
+                    else{
+                        let callback = this._events[Events.BUTTON_INTERACTION]
+                        if(typeof callback == 'function') callback(new MessageComponent(data), data)
+                    }
+                    
+                }
+                else if(event == 'MESSAGE_REACTION_ADD'){
+                    if(Events.REACTION_ADD in this._events) this._events[Events.REACTION_ADD](data)
+                }
+                else if(event == 'MESSAGE_REACTION_REMOVE'){
+                    if(Events.REACTION_REMOVE in this._events) this._events[Events.REACTION_REMOVE](data)
                 }
             }
             else if(type == 7) console.log('Trying to disconnect.')
-        })
-    }
-
-    #heartbeat = () => {
-        if(sequenceNumber === undefined){
-            sequenceNumber = null;
         }
-        con.send(JSON.stringify({op: 1, d: sequenceNumber}));
-        latency = new Date().getTime();
-        if(heartbeatloop) this.#heartbeatLoop();
-    }
-    
-    #heartbeatLoop = () => {
-        setTimeout(this.#heartbeat, this.heartbeatInterval)
-    }
-
-    /**
-     * 
-     * @callback slashCommandCallback
-     * @param {SlashCommandInteraction} command - 
-     */
-
-    /**
-     * 
-     * @param {String} event - The event that is going to be called.
-     * @param {slashCommandCallback} callback 
-     */
-    on(event, callback){
-        this._events[event] = callback;
     }
 }
 

@@ -3,7 +3,7 @@ axios.defaults.headers.post['Content-Type'] = 'application/json';
 
 const APIUrl = 'https://discord.com/api/v9/'
 
-class SlashCommandInteraction{
+class MessageComponent{
     id;
     raw;
     name;
@@ -18,6 +18,7 @@ class SlashCommandInteraction{
     user;
     token;
     version;
+    message;
     #has_sent = false;
     
     constructor(data){
@@ -25,6 +26,7 @@ class SlashCommandInteraction{
         this.id = data.id;
         console.log(this.id)
         this.messanges = {}
+        this.message = data.messange;
         this.applicationId = data.application_id;
         this.name = data.data.name;
         this.description = data.data.description;
@@ -57,15 +59,16 @@ class SlashCommandInteraction{
      * @param {object[]} embeds 
      * @param {object[]} allowed_mentions 
      */
-    Send(message, hidden=false, tts=false, embeds=null, allowed_mentions=null, components=null){
+    Send(message, hidden=false, tts=false, embeds=null, allowed_mentions=null, components=null, type=7){
         if(!this.#has_sent) var url = `${APIUrl}interactions/${this.id}/${this.token}/callback`
-        else var url = `${APIUrl}webhooks/${this.applicationId}/${this.token}/`
+        else var url = `${APIUrl}webhooks/${this.applicationId}/${this.token}`
         var slashResponse = {
             method: 'POST',
             url 
         }
+        //console.log(url)
         var data = {
-            type: 4,
+            type: type,
             data: {
                 content: message,
             }
@@ -85,8 +88,10 @@ class SlashCommandInteraction{
         .catch((err) => {
             console.log(err)
             console.log(JSON.stringify(err.response.data))
+            //console.log(components+'\n'+message)
         })
-        this.#has_sent = true;
+
+        if(type == 4)this.#has_sent = true;
     }
     
     Think(){
@@ -141,4 +146,4 @@ class SlashCommandInteraction{
     }
 }
 
-module.exports = SlashCommandInteraction;
+module.exports = MessageComponent;
