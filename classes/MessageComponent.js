@@ -9,7 +9,7 @@ class MessageComponent{
     name;
     description;
     applicationId;
-    options = {};
+    component = {};
     default_permission;
     type;
     guildId;
@@ -42,48 +42,50 @@ class MessageComponent{
         }
         else if(data.user) this.user = data.user;
 
-        if(data.data.options){
-            for(let option of data.data.options){
-                this.options[option.name] = option;
-            }
-        }
+        this.component = data.data;
+        
         this.token = data.token;
         this.version = data.version;
     }
 
     /**
      * 
-     * @param {String | object} message - The message you want to send.
-     * @param {boolean} hidden - If only the user that used the command can see the response.
-     * @param {boolean} tts - 
-     * @param {object[]} embeds 
-     * @param {object[]} allowed_mentions 
+     * @param {String} message - The message you want to send.
+     * @param {Object} settings - The settings for the message.
+     * @param {false} [settings.hidden] - If only the user that used the command can see the response.
+     * @param {false} [settings.tts] - 
+     * @param {object[]} [settings.embeds] - 
+     * @param {object[]} [settings.allowed_mentions] - 
+     * @param {object[]} [settings.components] - 
+     * @param {7} [settings.type=7] - 4: Send new message, 7: Update message.
      */
-    Send(message, hidden=false, tts=false, embeds=null, allowed_mentions=null, components=null, type=7){
+    Send(message, settings={hidden, tts, embeds, allowed_mentions, components, type:7}, callback){
         if(!this.#has_sent) var url = `${APIUrl}interactions/${this.id}/${this.token}/callback`
         else var url = `${APIUrl}webhooks/${this.applicationId}/${this.token}`
         var slashResponse = {
             method: 'POST',
             url 
         }
+        if(typeof settings.type != 'number') throw new TypeError('settings.type is supposed to be number, got '+typeof settings.type);
         //console.log(url)
         var data = {
-            type: type,
+            type: settings.type,
             data: {
                 content: message,
             }
         }
-        if(hidden) data.data.flags = 64;
-        if(tts == true) data.data.tts = true;
-        if(embeds) data.data.embeds = embeds;
-        if(allowed_mentions) data.data.allowed_mentions = allowed_mentions;
-        if(components) data.data.components = components;
+        if(typeof settings.hidden == 'boolean') data.data.flags = 64;
+        if(settings.tts == true) data.data.tts = true;
+        if(Array.isArray(settings.embeds)) data.data.embeds = embeds;
+        if(Array.isArray(settings.allowed_mentions)) data.data.allowed_mentions = allowed_mentions;
+        if(Array.isArray(settings.components)) data.data.components = components;
 
         slashResponse.data = JSON.stringify(data);
 
         axios(slashResponse)
         .then((resp) => {
             this.messanges[data.id] = resp.data;
+            if(callback) callback(resp.data);
         })
         .catch((err) => {
             console.log(err)
@@ -91,7 +93,7 @@ class MessageComponent{
             //console.log(components+'\n'+message)
         })
 
-        if(type == 4)this.#has_sent = true;
+        if(settings.type == 4)this.#has_sent = true;
     }
     
     Think(){

@@ -67,10 +67,13 @@ class Client{
     /**
      * 
      * @param {String} token - Your bot token.
+     * @param {Object} opt - Extra settings.
+     * @param {number} opt.intents - Your intents.
      */
-    constructor(token){
+    constructor(token, opt){
         if(typeof token != 'string') throw new Error('Token has to be string.')
         this.token = token;
+        connectionData.d.intents = opt.intents;
     }
 
     /**
@@ -78,7 +81,7 @@ class Client{
      * @param {String} [token] - Your bot token.
      */
     start(token){
-        var token = token || this.token; 
+        var token = token || this.token;
         con = new WebSocket();
         con.open('wss://gateway.discord.gg');
 
@@ -88,8 +91,16 @@ class Client{
 
     /**
      * 
+     * @callback messageComponentCallback
+     * @param {MessageComponent} messageComponent - The incoming message component.
+     * @param {object} raw - The raw message component data.
+     */
+
+    /**
+     * 
      * @callback slashCommandCallback
-     * @param {SlashCommandInteraction} command - 
+     * @param {SlashCommandInteraction} command - The incoming command.
+     * @param {object} raw - The raw command data.
      */
 
     /**
@@ -99,6 +110,22 @@ class Client{
      */
     on(event, callback){
         this._events[event] = callback;
+    }
+
+    /**
+     * 
+     * @param {slashCommandCallback} callback - The callback needed to recive the command data.
+     */
+    onCommand(callback){
+        this._events[Events.SLASH_COMMAND] = callback;
+    }
+
+    /**
+     * 
+     * @param {messageComponentCallback} callback - The callback needed to recive the message component data.
+     */
+    onMessageComponent(callback){
+        this._events[Events.BUTTON_INTERACTION] = callback;
     }
 
     webSocketSetup(token){
@@ -126,7 +153,7 @@ class Client{
             
         })*/
         con.onclose = (e) => {
-            this.heartBeat.Close();
+            this.heartBeat.Stop();
             this.heartBeat = null;
             this.reconnect = true;
         }
@@ -141,22 +168,23 @@ class Client{
             var type = raw_json.op;
             var event = raw_json.t;
             if(raw_json.s) {
-                this.heartBeat._newData(raw_json.s)
+                this.heartBeat.newData(raw_json.s)
             }
             //let ping = new Date().getTime();
             //console.log(type)
-            console.log(this.heartBeat)
+            //console.log(this.heartBeat)
             if(type == 7){
-                con.send(JSON.stringify({ op: 6, d: {token: this.token, session_id: this.sessionID, seq: sequenceNumber} }))
+                con.send(JSON.stringify({ op: 6, d: {token: this.token, session_id: this.sessionID, seq: sequenceNumber}}))
             }
             
-            else if(type == 11) this.heartBeat._callback(Date.now());
+            else if(type == 11) this.heartBeat._callback(new Date().getTime());
             else if(type == 10) {
                 this.heartbeatInterval = data.heartbeat_interval;
                 console.log('Started to ping every', (this.heartbeatInterval/1000).toString(), 'seconds.')
-                connectionData.d.token = token;
+                connectionData.d.token = token; 
                 con.send(JSON.stringify(connectionData));
-                this.heartBeat = HeartBeatLoop(con, this.heartbeatInterval)
+                this.heartBeat = new HeartBeatLoop(con, this.heartbeatInterval)
+                this.heartBeat.Start()
             }
             else if(type == 0){
                 console.log('Event:', event);
@@ -165,6 +193,7 @@ class Client{
                     if(Events.GUILD in this._events) this._events[Events.GUILD](data);
                 }
                 else if(event == 'READY') {
+                    this.user = data.user;
                     this.sessionID = data.session_id;
                     for(let guild of data.guilds){
                         this.storage._guilds[guild.id] = guild;
@@ -173,10 +202,9 @@ class Client{
                 }
                 else if(event == 'INTERACTION_CREATE'){
                     //console.log(data.token)
-                    let Command = new SlashCommandInteraction(data);
-                    if(Command.type == 2){
+                    if(data.type == 2){
                         let callback = this._events[Events.SLASH_COMMAND]
-                        if(typeof callback == 'function') callback(Command, data)
+                        if(typeof callback == 'function') callback(new SlashCommandInteraction(data), data)
                     }
                     else{
                         let callback = this._events[Events.BUTTON_INTERACTION]
@@ -189,6 +217,9 @@ class Client{
                 }
                 else if(event == 'MESSAGE_REACTION_REMOVE'){
                     if(Events.REACTION_REMOVE in this._events) this._events[Events.REACTION_REMOVE](data)
+                }
+                else if(event == 'MESSAGE_CREATE'){
+                    if(Events.MESSAGE in this._events) this._events[Events.MESSAGE](data)
                 }
             }
             else if(type == 7) console.log('Trying to disconnect.')

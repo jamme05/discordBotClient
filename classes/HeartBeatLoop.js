@@ -1,11 +1,16 @@
 const WebSocket = require('./WebSocketClient.js')
 
 var _webSocket;
-var interval;
+var _interval;
 var sequenceNumber;
 var _latency;
 var heartLoop;
-HeartBeatLoop.callback = (latency) => console.log(`HeartBeat active. Latency: ${latency} ms`);
+
+
+class HeartBeatLoop{
+
+    callback = (latency) => {console.log(`HeartBeat active. Latency: ${latency} ms`)}
+
 
     /**
      * 
@@ -18,32 +23,40 @@ HeartBeatLoop.callback = (latency) => console.log(`HeartBeat active. Latency: ${
      * @param {Number} interval 
      * @param {HeartBeatCallback} [callback] 
      */
-function HeartBeatLoop(webSocket, interval, callback){
-    _webSocket = webSocket;
-    interval = interval;
-    this.callback = callback;
-    _loop();
+    constructor(webSocket, interval, callback){
+        _webSocket = webSocket;
+        _interval = interval;
+        console.log(interval)
+        this.callback = callback || this.callback;
+    }
+
+    Start(){
+        //console.log(_interval)
+        Loop()
+    }
+
+    Stop(){
+        clearTimeout(heartLoop);
+        _webSocket = null;
+    }
+
+    _callback(latency){
+        this.callback(latency-_latency);
+    }
+
+    newData(sequenceNumber){ sequenceNumber = sequenceNumber; }
+
 }
 
-HeartBeatLoop.Stop = () => {
-    clearTimeout(heartLoop);
-    _webSocket = null;
-}
-
-HeartBeatLoop._callback = (latency) => {
-    this.callback(latency-_latency);
-}
-
-HeartBeatLoop.newData = (sequenceNumber) => { sequenceNumber = sequenceNumber; }
-
-function _loop(){
+function Loop(){
+    if(_webSocket == null) return;
     if(sequenceNumber === undefined){
         sequenceNumber = null;
     }
     _webSocket.send(JSON.stringify({op: 1, d: sequenceNumber}));
-    latency = new Date().getTime();
-    heartLoop = setTimeout(_loop, interval);
+    _latency = new Date().getTime();
+    //console.log(_interval)
+    heartLoop = setTimeout(Loop, _interval);
 }
-
 
 module.exports = HeartBeatLoop;

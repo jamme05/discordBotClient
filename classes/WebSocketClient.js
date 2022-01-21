@@ -10,13 +10,17 @@ WebSocketClient.prototype.open = function(url){
 	this.url = url;
 	this.instance = new WebSocket(this.url);
 	this.instance.on('open',()=>{
-		this.onopen();
+		void async function() {
+			await this.onopen();
+		}
+		
 	});
 	this.instance.on('message',(data,flags)=>{
 		this.number ++;
 		this.onmessage(data,flags,this.number);
 	});
 	this.instance.on('close',(e)=>{
+		console.log(e)
 		switch (e.code){
 		case 1000:	// CLOSE_NORMAL
 			console.log("WebSocket: closed");
@@ -28,6 +32,7 @@ WebSocketClient.prototype.open = function(url){
 		this.onclose(e);
 	});
 	this.instance.on('error',(e)=>{
+		console.log(e)
 		switch (e.code){
 		case 'ECONNREFUSED':
 			this.reconnect(e);
