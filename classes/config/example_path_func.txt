@@ -1,0 +1,10 @@
+/**
+ * 
+ * @param {String} _id - The PLACE snowflake.
+ * @returns {``}
+ */
+Routes.PLACEHOLD = (_id) => {return ``};
+/**
+ * @type {GET}
+ */
+Routes.PLACEHOLD.METHOD = 'GET';
