@@ -4,10 +4,14 @@ const POST='POST',GET='GET',PATCH='PATCH',DELETE='DELETE',PUT='PUT'
 
 /**
  * 
- * @param {Number|String} [version] - Target api version, picks latest if none specified.
+ * @param {'6'|'8'|'9'|6|8|9} [version] - Target api version, picks latest if none specified.
  * @returns {`https://discord.com/api/${v}`}
  */
-const Routes = (version) => {return api_path+version.toString()||v};
+const Routes = (version) => {
+    if(version == undefined) return api_path+v;
+    else return api_path+version.toString();
+};
+    
 /**
  * 
  * @param {String} guild_id - The guild snowflake.
