@@ -5,4 +5,4 @@ Before I add more general support and docs I highly recommend using [discord.js]
 
 More stuff coming when I've got the time to add them, and usually pretty random times for updates.
 
-Latest update: [0.1.1](https://github.com/jamme05/discordBotClient.js/tree/main/updates)
+Latest update: [0.1.1](https://github.com/jamme05/discordBotClient.js/tree/main/Updates)
