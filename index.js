@@ -3,5 +3,5 @@ module.exports = {
     Events: require('./classes/Events'),
     SlashCommand: require('./classes/SlashCommand'),
     MessageComponent: require('./classes/MessageComponent.js'),
-    WebHookClient: require('./classes/WebHookClient')
+    WebHookClient: require('./classes/WebhookClient.js')
 }

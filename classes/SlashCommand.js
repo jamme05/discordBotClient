@@ -1,4 +1,4 @@
-const axios = require('axios')
+const {default:axios} = require('axios')
 axios.defaults.headers.post['Content-Type'] = 'application/json';
 const Message = require('./Message.js')
 
@@ -16,6 +16,9 @@ class SlashCommandInteraction{
     guildId;
     channelId;
     member;
+    /**
+     * @type {{id:string,username:string,discriminator:string,avatar?:string,bot?:boolean,system?:boolean,banner?:string,accent_color?:number,flags?:number,premium_type?:number,public_flags?:number}}
+     */
     user;
     token;
     version;
@@ -23,8 +26,8 @@ class SlashCommandInteraction{
     
     constructor(data){
         this.raw = data;
-        this.id = data.id;
-        console.log(this.id)
+        this.id = new Snowflake(data.id);
+        //console.log(this.id)
         this.messanges = {}
         this.applicationId = data.application_id;
         this.name = data.data.name;
@@ -49,18 +52,36 @@ class SlashCommandInteraction{
         this.token = data.token;
         this.version = data.version;
     }
-
+    /**
+     * 
+     * @typedef {Object} Embed
+     * @property {string} [title]
+     * @property {'rich'|'image'|'video'|'gifv'|'article'|'link'} [type='rich']
+     * @property {string} [description]
+     * @property {string} [url]
+     * @property {number} [timestamp]
+     * @property {number} [color]
+     * @property {{text:string,icon_url?:string,proxy_icon_url?:string}} [footer]
+     * @property {{url:string,proxy_url?:string,height?:number,width?:number}} [image]
+     * @property {{url:string,proxy_url?:string,height?:number,width?:number}} [thumbnail]
+     * @property {{url:string,proxy_url?:string,height?:number,width?:number}} [video]
+     * @property {{name?:string,url?:string}} [provider]
+     * @property {{name:string,url?:string,icon_url?:string,proxy_icon_url?:string}} [author]
+     * @property {{name:string,value:string,inline?:boolean}[]} [fields]
+     */
+    
     /**
      * 
      * @param {any} message - The message you want to send.
      * @param {Object} MessageData - Extra data for your message.
      * @param {false} [MessageData.hidden] - If only the user that used the command can see the response. (defaults to false)
      * @param {false} [MessageData.tts] - If your message is gonna use tts. (defaults to false)
-     * @param {object[]} [MessageData.embeds] - The embeds for your message. (defaults to null)
+     * @param {Embed[]} [MessageData.embeds] - The embeds for your message. (defaults to null)
      * @param {object[]} [MessageData.allowed_mentions] - The allowed mentions for your message. (defaults to null)
      * @param {object[]} [MessageData.components] - The components for your message. (defaults to null)
      */
-    Send(message, MessageData, callback){
+    /*
+    Send(message, {hidden,tts,embeds,allowed_mentions,components}, callback){
         if(!this.#has_sent) var url = `${APIUrl}interactions/${this.id}/${this.token}/callback`;
         else var url = `${APIUrl}webhooks/${this.applicationId}/${this.token}`;
         var slashResponse = {
@@ -79,11 +100,11 @@ class SlashCommandInteraction{
             throw new Error('Message too long, can only be 2000 characters at maximum.')
         }
         data.data.content = `${message}`;
-        if(MessageData.hidden) data.data.flags = 64;
-        if(MessageData.tts == true) data.data.tts = true;
-        if(MessageData.embeds) data.data.embeds = MessageData.embeds;
-        if(MessageData.allowed_mentions) data.data.allowed_mentions = MessageData.allowed_mentions;
-        if(MessageData.components) data.data.components = MessageData.components;
+        if(hidden) data.data.flags = 64;
+        if(tts == true) data.data.tts = true;
+        if(embeds) data.data.embeds = embeds;
+        if(allowed_mentions) data.data.allowed_mentions = allowed_mentions;
+        if(components) data.data.components = components;
 
         slashResponse.data = JSON.stringify(data);
 
@@ -99,20 +120,22 @@ class SlashCommandInteraction{
         })
         this.#has_sent = true;
     }
-
+    */
     /**
      * 
      * @param {any} message - The message you want to send.
      * @param {Object} MessageData - Extra data for your message.
      * @param {false} [MessageData.hidden] - If only the user that used the command can see the response. (defaults to false)
      * @param {false} [MessageData.tts] - If your message is gonna use tts. (defaults to false)
-     * @param {object[]} [MessageData.embeds] - The embeds for your message. (defaults to null)
+     * @param {Embed[]} [MessageData.embeds] - The embeds for your message. (defaults to null)
      * @param {object[]} [MessageData.allowed_mentions] - The allowed mentions for your message. (defaults to null)
      * @param {object[]} [MessageData.components] - The components for your message. (defaults to null)
+     * @param {number} [MessageData.type=4]
      * 
      * @returns {Message} - The message that got sent.
      */
     async Send(message, MessageData){
+        if(MessageData) var {hidden,tts,embeds,allowed_mentions,components} = MessageData;
         if(!this.#has_sent) var url = `${APIUrl}interactions/${this.id}/${this.token}/callback`;
         else var url = `${APIUrl}webhooks/${this.applicationId}/${this.token}`;
         var slashResponse = {
@@ -125,17 +148,17 @@ class SlashCommandInteraction{
                 content: ''
             }
         }
-        message = `${message}`;
+        message = (message === null) ? '':`${message}`;
 
         if(message.length > 2000){
             throw new Error('Message too long, can only be 2000 characters at maximum.')
         }
-        data.data.content = `${message}`;
-        if(MessageData.hidden) data.data.flags = 64;
-        if(MessageData.tts == true) data.data.tts = true;
-        if(MessageData.embeds) data.data.embeds = MessageData.embeds;
-        if(MessageData.allowed_mentions) data.data.allowed_mentions = MessageData.allowed_mentions;
-        if(MessageData.components) data.data.components = MessageData.components;
+        data.data.content = message;
+        if(hidden) data.data.flags = 64;
+        if(tts === true) data.data.tts = true;
+        if(embeds) data.data.embeds = embeds;
+        if(allowed_mentions) data.data.allowed_mentions = allowed_mentions;
+        if(components) data.data.components = components;
 
         slashResponse.data = JSON.stringify(data);
 
@@ -154,21 +177,40 @@ class SlashCommandInteraction{
                 type: 5
             })
         }
-        axios(slashResponse)
+        axios(slashResponse);
     }
 
-    Edit(message, hidden=false, tts=false, embeds=null, allowed_mentions=null, components=null){
+    /**
+     * 
+     * @param {any} message - The message you want to send.
+     * @param {Object} MessageData - Extra data for your message.
+     * @param {false} [MessageData.hidden] - If only the user that used the command can see the response. (defaults to false)
+     * @param {false} [MessageData.tts] - If your message is gonna use tts. (defaults to false)
+     * @param {Embed[]} [MessageData.embeds] - The embeds for your message. (defaults to null)
+     * @param {object[]} [MessageData.allowed_mentions] - The allowed mentions for your message. (defaults to null)
+     * @param {object[]} [MessageData.components] - The components for your message. (defaults to null)
+     * @param {number} [MessageData.type=4]
+     * 
+     * @returns {Message} - The message that got sent.
+     */
+    Edit(message, MessageData){
+        if(MessageData) var {hidden,tts,embeds,allowed_mentions,components} = MessageData;
         var url = `${APIUrl}webhooks/${this.applicationId}/${this.token}/messages/@original`
         var slashResponse = {
             method: 'PATCH',
             headers: {'Content-Type': 'application/json'},
             url
         }
-        var data = {
-            content: message,
+
+        var data = {};
+        message = (message === null) ? '':`${message}`;
+
+        if(message.length > 2000){
+            throw new Error('Message too long, can only be 2000 characters at maximum.')
         }
+        data.content = message;
         if(hidden) data.flags = 64;
-        if(tts == true) data.tts = true;
+        if(tts === true) data.tts = true;
         if(embeds) data.embeds = embeds;
         if(allowed_mentions) data.allowed_mentions = allowed_mentions;
         if(components) data.components = components;

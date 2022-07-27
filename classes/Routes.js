@@ -192,7 +192,7 @@ Routes.BulkDeleteMessages.METHOD = POST;
  * @param {String} overwrite_id - The role or user snowflake.
  * @returns {`/channels/${channel_id}/permissions/${overwrite_id}`}The url.
  */
-Routes.EditChannelPermission = (channel_id, overwrite_id) => {return `/channels/${channel_id}/permissions/${overwrite_id}`};
+Routes.EditChannelPermissions = (channel_id, overwrite_id) => {return `/channels/${channel_id}/permissions/${overwrite_id}`};
 /**
  * @type {PUT}
  */
@@ -223,7 +223,7 @@ Routes.CreateChannelnvite.METHOD = POST;
  * @param {String} overwrite_id - The role or user snowflake.
  * @returns {`/channels/${channel_id}/permissions/${overwrite_id}`}The url.
  */
-Routes.DeleteChannelPermission = (channel_id, overwrite_id) => {return `/channels/${channel_id}/permissions/${overwrite_id}`};
+Routes.DeleteChannelPermissions = (channel_id, overwrite_id) => {return `/channels/${channel_id}/permissions/${overwrite_id}`};
 /**
  * @type {DELETE}
  */
@@ -1594,7 +1594,7 @@ Routes.GetGuildApplicationCommandPermissions.METHOD = GET;
  * @param {String} command_id - The command snowflake.
  * @returns {`/applications/${application_id}/guilds/${guild_id}/commands`}The url.
  */
-Routes.EditApplicationCommandPermissions = (application_id,guild_id,command_id) => {return `/applications/${application_id}/guilds/${guild_id}/commands/${command_id}/permissions`};
+Routes.EditGuildApplicationCommandPermissions = (application_id,guild_id,command_id) => {return `/applications/${application_id}/guilds/${guild_id}/commands/${command_id}/permissions`};
 /**
  * @type {PUT}
  */
@@ -1847,4 +1847,39 @@ CDN.RoleIcon = (role_id,role_icon,type) => {return `role-icons/${role_id}/${role
  */
 CDN.GuildScheduledEventCover = (scheduled_event_id,scheduled_event_cover_image,type) => {return `guild-events/${scheduled_event_id}/${scheduled_event_cover_image}.${type||'png'}`}
 
-module.exports = {API:Routes,CDN};
+/**
+ * 
+ * @param {'6'|'8'|'9'|6|8|9} [version] - Target api version, picks latest if none specified.
+ * @returns {`https://discord.com/api/${v}`}
+ */
+const OAuth2 = (version) => {
+    if(version == undefined) return api_path+v;
+    else return api_path+version.toString();
+};
+/**
+ * 
+ * @returns 'https://discord.com/api/oauth2/authorize'
+ */
+OAuth2.authorize = () => {return 'https://discord.com/api/oauth2/authorize'}
+/**
+ * 
+ * @returns 'https://discord.com/api/oauth2/token'
+ */
+OAuth2.token = () => {return 'https://discord.com/api/oauth2/token'}
+/**
+ * 
+ * @returns 'https://discord.com/api/oauth2/token/revoke'
+ */
+OAuth2.token.revoke = () => {return 'https://discord.com/api/oauth2/token/revoke'}
+/**
+ * 
+ * @returns '/users/@me'
+ */
+OAuth2.User = () => {return '/users/@me'}
+/**
+ * @type {GET}
+ */
+OAuth2.User.METHOD = GET;
+OAuth2.Guilds = () => {return '/users/@me/guilds'}
+
+module.exports = {API:Routes,CDN,OAuth2};

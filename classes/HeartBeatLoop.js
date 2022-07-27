@@ -23,11 +23,11 @@ class HeartBeatLoop{
      * @param {Number} interval 
      * @param {HeartBeatCallback} [callback] 
      */
-    constructor(webSocket, interval, callback){
+    constructor(webSocket, interval, debug){
         _webSocket = webSocket;
         _interval = interval;
-        console.log(interval)
-        this.callback = callback || this.callback;
+        if(debug)console.log(interval)
+        if(!debug)this.callback = ()=>{};
     }
 
     Start(){

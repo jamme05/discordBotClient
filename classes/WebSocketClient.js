@@ -20,9 +20,9 @@ WebSocketClient.prototype.open = function(url){
 		this.onmessage(data,flags,this.number);
 	});
 	this.instance.on('close',(e)=>{
-		console.log(e)
+		//console.log('Error:',e)
 		switch (e.code){
-		case 1000:	// CLOSE_NORMAL
+		case 1000 || 1006:	// CLOSE_NORMAL
 			console.log("WebSocket: closed");
 			break;
 		default:	// Abnormal closure

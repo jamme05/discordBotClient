@@ -1,4 +1,7 @@
 {
+  "name": "discord-js",
+  "version": "0.1.1",
+  "author": "jamme05",
   "dependencies": {
     "axios": "^0.21.1",
     "ws": "^7.5.2"
